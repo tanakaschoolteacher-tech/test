@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ひとこと劇場</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column "stage" — a big お題カード sits center, controls stack under it; one screen per game phase */
+:root{
+  --ground:#E6ECF1;
+  --surface:#FFFFFF;
+  --ink:#18213D;
+  --muted:#5C6684;
+  --line:#C9D2DE;
+  --card:#F4C430;
+  --card-ink:#18213D;
+  --stamp:#D23F2A;
+  --good:#1F8A5B;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --ground:#111629;--surface:#1B2240;--ink:#EDF0F7;--muted:#9AA3C0;--line:#2E3760;
+    --card:#E2B22A;--card-ink:#141A30;--stamp:#F0644D;--good:#43C08A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --ground:#111629;--surface:#1B2240;--ink:#EDF0F7;--muted:#9AA3C0;--line:#2E3760;
+  --card:#E2B22A;--card-ink:#141A30;--stamp:#F0644D;--good:#43C08A;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.7;padding-inline:16px}
+.wrap{max-width:720px;margin:0 auto;padding-block:24px 48px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.logo{font-family:var(--display);font-size:28px;letter-spacing:.02em;line-height:1.1}
+.logo span{color:var(--stamp)}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0;text-wrap:balance;line-height:1.35}
+p{margin:0}
+.lead{color:var(--muted);font-size:15px}
+
+/* お題カード */
+.card{background:var(--card);color:var(--card-ink);border-radius:18px;padding:22px 22px 18px;box-shadow:0 2px 0 rgba(0,0,0,.12),0 14px 30px -18px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:14px}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.kind{font-size:12px;font-weight:700;letter-spacing:.12em;border:1.5px solid currentColor;border-radius:99px;padding:1px 10px}
+.cardno{font-size:12px;font-weight:700;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+.line{font-family:var(--display);font-size:clamp(40px,11vw,72px);line-height:1.1;text-align:center;padding-block:6px;text-wrap:balance}
+.opts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px}
+.opts li{display:flex;gap:10px;align-items:flex-start;font-size:15px;font-weight:500;line-height:1.45}
+.opts b{font-family:var(--display);font-weight:400;flex:none;width:26px;height:26px;border-radius:50%;background:var(--card-ink);color:var(--card);display:grid;place-items:center;font-size:14px;line-height:1}
+.opts li.hit{outline:3px solid var(--stamp);outline-offset:3px;border-radius:6px}
+@media (max-width:520px){.opts{grid-template-columns:1fr}}
+
+/* panels & controls */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-weight:700;font-size:16px;border:0;border-radius:12px;padding:12px 20px;cursor:pointer;background:var(--ink);color:var(--ground);min-height:48px}
+.btn.big{width:100%;font-size:18px;padding:16px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.small{padding:6px 12px;min-height:36px;font-size:14px}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.chk:focus-within{outline:3px solid var(--stamp);outline-offset:2px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+label.lbl{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted)}
+input[type=text],select{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:1.5px solid var(--line);background:var(--ground);color:var(--ink);min-width:0}
+.players{display:flex;flex-direction:column;gap:8px}
+.prow{display:flex;gap:8px}
+.prow input{flex:1}
+.field{display:flex;flex-direction:column;gap:6px}
+
+/* secret */
+.secret{min-height:220px;border-radius:18px;border:2px dashed var(--line);display:grid;place-items:center;text-align:center;padding:24px;background:var(--surface)}
+.stamp{font-family:var(--display);font-size:110px;line-height:1;color:var(--stamp);transform:rotate(-6deg);display:inline-block}
+.secret-sit{font-size:20px;font-weight:700;margin-top:8px}
+
+/* checklist & scores */
+.chks{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.chk{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:500;background:var(--ground)}
+.chk input{width:20px;height:20px;accent-color:var(--good)}
+.chk:has(input:checked){border-color:var(--good)}
+.scores{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.scores li{display:grid;grid-template-columns:32px 1fr auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.scores li:last-child{border-bottom:0}
+.rank{font-family:var(--display);color:var(--muted)}
+.scores li.top .rank{color:var(--stamp)}
+.pts{font-family:var(--display);font-size:20px}
+.delta{color:var(--good);font-size:13px;font-weight:700;margin-left:6px}
+.who{font-family:var(--display);font-size:clamp(30px,8vw,44px);line-height:1.2;text-align:center}
+.center{text-align:center}
+.timer{font-family:var(--display);font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rules{font-size:14px;color:var(--muted);padding-left:1.2em;margin:0}
+.rules li{margin-block:2px}
+.order{display:flex;gap:6px;flex-wrap:wrap}
+.order span{font-size:13px;border:1px solid var(--line);border-radius:99px;padding:2px 10px;color:var(--muted)}
+.order span.now{background:var(--ink);color:var(--ground);border-color:var(--ink)}
+.order span.done{text-decoration:line-through}
+@media (prefers-reduced-motion:no-preference){
+  .card,.secret,.panel{animation:rise .28s ease-out}
+  @keyframes rise{from{transform:translateY(6px)}to{transform:none}}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="logo">ひとこと<span>劇場</span></div>
+    <div class="meta" id="meta"></div>
+  </header>
+  <main id="app" style="display:flex;flex-direction:column;gap:20px"></main>
+</div>
+
+<script>
+const CARDS = [
+ {k:"セリフ",t:"はあ？",o:["宿題を3倍に増やされた","うるさくて聞き取れなかった","友だちの寒いダジャレに","自販機がお金を飲みこんだ","憧れの人に急に名前を呼ばれた","寝起きで状況がわからない","弟にプリンを食べられていた","100点と聞いて信じられない"]},
+ {k:"セリフ",t:"えっ",o:["財布を家に忘れたと気づいた","好きな人に話しかけられた","テストが今日だと知った","くじで1等が当たった","後ろから肩をたたかれた","推しの結婚を知った","料理に虫が入っていた","親友の転校を聞いた"]},
+ {k:"セリフ",t:"なるほど",o:["難問がやっと解けた","本当はよくわかっていない","相手の言い訳を疑っている","手品のタネを明かされた","先生の長話を聞き流している","名探偵が犯人を見抜いた","感動して心から納得した","皮肉っぽく言い返す"]},
+ {k:"セリフ",t:"ちょっと",o:["店員さんを呼びとめる","電車で足を踏まれた","内緒話に誘う","遠慮して断る","手伝いを頼みたい","散らかった部屋を見た母","ふざけすぎを注意する","甘えている"]},
+ {k:"セリフ",t:"すごい",o:["花火大会のフィナーレ","お世辞で言っている","子どもの絵をほめる","特盛ラーメンが来た","ライバルの実力に悔しがる","図書館で小声で感動","赤ちゃんが初めて立った","自慢話にうんざり"]},
+ {k:"セリフ",t:"おはよう",o:["大寝坊して昼に起きた","元気いっぱいの朝礼","徹夜明けでへとへと","好きな人とばったり","けんかした翌朝で気まずい","寝ている赤ちゃんの横で","朝のラジオ番組の司会","寝起きの機嫌が最悪"]},
+ {k:"セリフ",t:"ありがとう",o:["サプライズで誕生日を祝われた","ほしくないプレゼントをもらった","命を助けてもらった","コンビニでおつりを受け取る","卒業式で先生に","照れて目を合わせられない","嫌みに嫌みで返す","優勝インタビュー"]},
+ {k:"セリフ",t:"うそでしょ",o:["ライブのチケットが当たった","給食のデザートがなかった","体重計に乗った","友だちのとんでもない作り話","終電を目の前で逃した","夢がかなって泣きそう","ホラー映画で振り向いたら","ゲームのデータが消えた"]},
+ {k:"セリフ",t:"もしもし",o:["電波が悪くて聞こえない","いたずら電話をかける","大好きな人からの電話","寝ている人を起こす","社長からの電話で緊張","隠れて小声で","耳の遠いおばあちゃんに","何度もかけてやっとつながった"]},
+ {k:"セリフ",t:"おいしい",o:["一流シェフとして審査","まずいけど作った人が見ている","3日ぶりのごはん","熱すぎてハフハフ","食レポのアナウンサー","辛すぎて涙が出る","初めての味に感動する子ども","ダイエット中なのに食べた"]},
+ {k:"セリフ",t:"まって",o:["発車しそうなバスを追う","去っていく恋人を引きとめる","話の展開についていけない","散歩中の犬が走り出した","クイズの答えを言われそう","笑いが止まらない","怖い話の続きを聞きたくない","写真のポーズが決まってない"]},
+ {k:"セリフ",t:"ごめん",o:["待ち合わせに大遅刻","心がこもっていない","告白を断る","人混みで軽くぶつかった","大切な物を壊した","笑いながら謝る","泣きながら謝る","先に帰ると伝える"]},
+ {k:"セリフ",t:"よし",o:["試合前に気合を入れる","犬がおすわりできた","宿題がやっと終わった","嫌なことを決心する","悪だくみを思いついた","料理の味見で満足","部下の報告を聞く上司","布団から出る覚悟"]},
+ {k:"セリフ",t:"ふーん",o:["まったく興味がない","本当はすごく気になる","やきもちを焼いている","うそを見抜いた","素直に感心している","眠くて聞いていない","すねている","大人ぶってクールに"]},
+ {k:"セリフ",t:"おかえり",o:["長旅から家族が帰ってきた","門限を破った子どもに","ペットになりきって","メイド喫茶の店員","待ちくたびれていた","戦いから戻った仲間に","ゲームから目を離さずに","夜中にこっそり帰った家族を発見"]},
+ {k:"しぐさ",t:"拍手する",o:["コンサートが大成功","やる気のない授業の終わり","赤ちゃんをあやす","ゆっくり皮肉っぽく","飛んでいる蚊をつぶす","神社でお参り","優勝が決まった瞬間","アシカのまね"]},
+ {k:"しぐさ",t:"手を振る",o:["遠くの友だちに気づいてほしい","船で旅立つ人を見送る","王族のパレード","「いらない」と断る","暑くて顔をあおぐ","好きな人にこっそり","タクシーを止める","舞台のカーテンコール"]},
+ {k:"しぐさ",t:"ため息をつく",o:["恋わずらい","テストの結果が悪かった","温泉に入って極楽","子どものいたずらにあきれる","長い仕事が終わってほっと","通帳の残高を見た","名画にうっとり","雨で遠足が中止"]},
+];
+const L = "ABCDEFGH";
+const SAMPLE = ["あおい","けんた","みさき","ゆう"];
+
+let S = null; // game state
+function loadNames(){ try{const n=JSON.parse(localStorage.getItem("hk-names")); if(Array.isArray(n)&&n.length>=2) return n;}catch(e){} return SAMPLE.slice(); }
+function saveNames(n){ try{localStorage.setItem("hk-names",JSON.stringify(n));}catch(e){} }
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function fresh(){ return {phase:"setup",names:loadNames(),rounds:3,round:0,deck:[],turn:0,letters:[],scores:[],gain:[],revealed:false}; }
+
+function cardHTML(c,no,hit){
+  return `<section class="card" aria-label="お題カード">
+    <div class="card-top"><span class="kind">${c.k}</span><span class="cardno">${no}</span></div>
+    <div class="line">${c.k==="セリフ"?"「"+esc(c.t)+"」":esc(c.t)}</div>
+    <ol class="opts">${c.o.map((s,i)=>`<li class="${hit===i?"hit":""}"><b>${L[i]}</b><span>${esc(s)}</span></li>`).join("")}</ol>
+  </section>`;
+}
+function orderHTML(){
+  return `<div class="order">${S.names.map((n,i)=>`<span class="${i===S.turn?"now":i<S.turn?"done":""}">${esc(n)}</span>`).join("")}</div>`;
+}
+function scoresHTML(showGain){
+  const idx=S.names.map((_,i)=>i).sort((a,b)=>S.scores[b]-S.scores[a]);
+  const top=S.scores[idx[0]];
+  let rank=0,prev=null;
+  return `<ol class="scores">${idx.map((i,k)=>{ if(S.scores[i]!==prev){rank=k+1;prev=S.scores[i];}
+    return `<li class="${S.scores[i]===top&&top>0?"top":""}"><span class="rank">${rank}</span><span>${esc(S.names[i])}${showGain&&S.gain[i]?`<span class="delta">+${S.gain[i]}</span>`:""}</span><span class="pts">${S.scores[i]}</span></li>`;}).join("")}</ol>`;
+}
+const card=()=>S.deck[S.round];
+
+let timerId=null;
+function render(){
+  clearInterval(timerId);
+  const app=document.getElementById("app");
+  const meta=document.getElementById("meta");
+  meta.textContent = S.phase==="setup"||S.phase==="final" ? "声と顔だけで伝えるパーティーゲーム" : `ラウンド ${S.round+1} / ${S.rounds}`;
+  const no = `No.${String(CARDS.indexOf(card()||CARDS[0])+1).padStart(2,"0")}`;
+
+  if(S.phase==="setup"){
+    app.innerHTML = `
+      ${cardHTML(CARDS[0],"見本")}
+      <div class="panel">
+        <h2>遊び方</h2>
+        <ol class="rules">
+          <li>お題カードには、ひとつのセリフ（またはしぐさ）と、A〜Hの8つのシチュエーションが書いてあります。</li>
+          <li>演じる人はこっそり自分のアルファベットを確認し、そのセリフとしぐさ・表情だけで演じます。説明は禁止です。</li>
+          <li>ほかの人は、どのシチュエーションかを指で示して当てます。</li>
+          <li>正解した人に1点。演じた人には正解者1人につき1点が入ります。</li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h2>プレイヤー</h2>
+        <div class="players" id="players">${S.names.map((n,i)=>`
+          <div class="prow"><input type="text" id="p${i}" value="${esc(n)}" maxlength="10" aria-label="プレイヤー${i+1}の名前">
+          <button class="btn ghost small" data-del="${i}" ${S.names.length<=3?"disabled":""} aria-label="${esc(n)}を削除">削除</button></div>`).join("")}
+        </div>
+        <div class="row">
+          <button class="btn ghost small" id="add" ${S.names.length>=8?"disabled":""}>＋ プレイヤーを追加</button>
+          <span class="lead">3〜8人</span>
+        </div>
+        <div class="field">
+          <label class="lbl" for="rounds">ラウンド数</label>
+          <select id="rounds">${[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===S.rounds?"selected":""}>${n} ラウンド（1人${n}回演じる）</option>`).join("")}</select>
+        </div>
+        <button class="btn big" id="start">ゲームをはじめる</button>
+      </div>`;
+    const sync=()=>{S.names=S.names.map((_,i)=>document.getElementById("p"+i).value.trim()||`プレイヤー${i+1}`);};
+    app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{sync();S.names.splice(+b.dataset.del,1);render();});
+    document.getElementById("add").onclick=()=>{sync();S.names.push(`プレイヤー${S.names.length+1}`);render();document.getElementById("p"+(S.names.length-1)).select();};
+    document.getElementById("rounds").onchange=e=>S.rounds=+e.target.value;
+    document.getElementById("start").onclick=()=>{
+      sync(); saveNames(S.names);
+      S.deck=shuffle(CARDS).slice(0,S.rounds); S.round=0;
+      S.scores=S.names.map(()=>0); startRound();
+    };
+    return;
+  }
+
+  if(S.phase==="intro"){
+    app.innerHTML = `
+      ${cardHTML(card(),no)}
+      <div class="panel">
+        <p class="lead">このラウンドのお題です。全員で読んでから、最初の人に端末を渡してください。</p>
+        ${orderHTML()}
+        <button class="btn big" id="go">${esc(S.names[S.turn])}さんに渡す</button>
+      </div>`;
+    document.getElementById("go").onclick=()=>{S.phase="secret";S.revealed=false;render();};
+    return;
+  }
+
+  if(S.phase==="secret"){
+    const li=S.letters[S.turn];
+    app.innerHTML = `
+      <div class="who">${esc(S.names[S.turn])}さん</div>
+      <p class="center lead">ほかの人には見えないようにしてください</p>
+      <div class="secret" id="sec">${S.revealed
+        ? `<div><span class="stamp">${L[li]}</span><div class="secret-sit">${esc(card().o[li])}</div><p class="lead">セリフは${card().k==="セリフ"?"「"+esc(card().t)+"」":"「"+esc(card().t)+"」のしぐさ"}</p></div>`
+        : `<button class="btn" id="peek">タップして自分の番号を見る</button>`}</div>
+      <button class="btn big" id="ok" ${S.revealed?"":"disabled"}>覚えた。画面を隠して演技へ</button>`;
+    if(!S.revealed) document.getElementById("peek").onclick=()=>{S.revealed=true;render();};
+    document.getElementById("ok").onclick=()=>{S.phase="act";render();};
+    return;
+  }
+
+  if(S.phase==="act"){
+    app.innerHTML = `
+      <div class="who">${esc(S.names[S.turn])}さんの演技</div>
+      <p class="center timer" id="tm">0:00</p>
+      ${cardHTML(card(),no)}
+      <div class="panel">
+        <p class="lead">演技が終わったら、全員いっせいに答えを指で示してから「答え合わせ」を押してください。</p>
+        <button class="btn big" id="ans">答え合わせ</button>
+      </div>`;
+    const t0=Date.now(), tm=document.getElementById("tm");
+    timerId=setInterval(()=>{const s=(Date.now()-t0)/1000|0;tm.textContent=`${s/60|0}:${String(s%60).padStart(2,"0")}`;},500);
+    document.getElementById("ans").onclick=()=>{S.phase="check";render();};
+    return;
+  }
+
+  if(S.phase==="check"){
+    const li=S.letters[S.turn];
+    app.innerHTML = `
+      <div class="center"><span class="stamp" style="font-size:80px">${L[li]}</span><div class="secret-sit">${esc(card().o[li])}</div></div>
+      ${cardHTML(card(),no,li)}
+      <div class="panel">
+        <h2>正解した人をチェック</h2>
+        <div class="chks">${S.names.map((n,i)=>i===S.turn?"":`<label class="chk"><input type="checkbox" id="c${i}" data-i="${i}">${esc(n)}</label>`).join("")}</div>
+        <button class="btn big" id="next">得点を記録</button>
+      </div>`;
+    document.getElementById("next").onclick=()=>{
+      const hits=[...app.querySelectorAll("input[data-i]:checked")].map(x=>+x.dataset.i);
+      hits.forEach(i=>{S.scores[i]++;S.gain[i]++;});
+      S.scores[S.turn]+=hits.length; S.gain[S.turn]+=hits.length;
+      S.turn++;
+      S.phase = S.turn<S.names.length ? "pass" : "roundEnd";
+      render();
+    };
+    return;
+  }
+
+  if(S.phase==="pass"){
+    app.innerHTML = `
+      <div class="panel">
+        <p class="lead">現在の得点</p>
+        ${scoresHTML(true)}
+      </div>
+      <div class="panel">
+        ${orderHTML()}
+        <button class="btn big" id="go">${esc(S.names[S.turn])}さんに渡す</button>
+      </div>`;
+    document.getElementById("go").onclick=()=>{S.phase="secret";S.revealed=false;render();};
+    return;
+  }
+
+  if(S.phase==="roundEnd"){
+    const last=S.round+1>=S.rounds;
+    app.innerHTML = `
+      <div class="panel">
+        <h2>ラウンド${S.round+1} 終了</h2>
+        <p class="lead">緑の数字はこのラウンドで増えた点です。</p>
+        ${scoresHTML(true)}
+        <button class="btn big" id="go">${last?"結果発表":"次のお題へ"}</button>
+      </div>`;
+    document.getElementById("go").onclick=()=>{ if(last){S.phase="final";render();} else {S.round++;startRound();} };
+    return;
+  }
+
+  if(S.phase==="final"){
+    const top=Math.max(...S.scores);
+    const winners=S.names.filter((_,i)=>S.scores[i]===top);
+    app.innerHTML = `
+      <div class="card" style="text-align:center">
+        <div class="cardno">優勝</div>
+        <div class="line">${winners.map(esc).join("・")}</div>
+        <div class="cardno">${top} 点</div>
+      </div>
+      <div class="panel">
+        ${scoresHTML(false)}
+        <div class="row">
+          <button class="btn" id="again">同じメンバーでもう一度</button>
+          <button class="btn ghost" id="setup">メンバーを変える</button>
+        </div>
+      </div>`;
+    document.getElementById("again").onclick=()=>{S.deck=shuffle(CARDS).slice(0,S.rounds);S.round=0;S.scores=S.names.map(()=>0);startRound();};
+    document.getElementById("setup").onclick=()=>{S=fresh();render();};
+  }
+}
+function startRound(){
+  S.turn=0; S.letters=S.names.map(()=>Math.random()*8|0); S.gain=S.names.map(()=>0);
+  S.phase="intro"; render(); window.scrollTo(0,0);
+}
+
+function start(data){
+  S = data && data.state ? data.state : fresh();
+  render();
+}
+window.claude?.hot?.snapshot?.(()=>({state:S}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
